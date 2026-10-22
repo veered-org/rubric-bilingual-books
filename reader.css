@@ -1,0 +1,48 @@
+/* The printed book. reader.js sets --tf (target font), --dir and the @page rule. */
+:root { --tf: "Noto Serif", serif; --dir: ltr; --red: #A33; --gloss: #555; --tag: #6b7d55; --pass: #2f4f8a; --idiom: #8a6514; }
+.book { color: #1b1b1b; background: #fff; font: 300 11pt/1.5 Lexend, sans-serif; }
+.book .title { text-align: center; padding-block: 6mm 5mm; }
+.book .title .by { font-size: 8pt; letter-spacing: .25em; text-transform: uppercase; color: #555; }
+.book .title .tt { font-family: var(--tf); direction: var(--dir); font-weight: 700; font-size: 34pt; line-height: 1.15; margin-top: 3mm; }
+.book .title .ot { font-size: 14pt; font-weight: 400; letter-spacing: .04em; }
+.book .title hr, .book .chhead hr { width: 30mm; border: 0; border-top: .5pt solid #999; margin: 5mm auto 0; }
+.book .key { font-size: 8pt; color: #555; text-align: center; margin: 0 0 5mm; }
+.book .key u, .book .notes u { text-decoration-color: #9fb3d9; text-decoration-thickness: 1.2pt; }
+.book .chhead { text-align: center; margin: 2mm 0 6mm; break-before: page; }
+.book .chhead.first { break-before: auto; }
+.book .chhead .num { font-size: 8pt; letter-spacing: .25em; text-transform: uppercase; color: #555; }
+.book .chhead .tt { font-family: var(--tf); direction: var(--dir); font-weight: 700; font-size: 25pt; line-height: 1.25; margin-top: 1mm; }
+.book .chhead .ot { font-size: 12pt; font-weight: 400; }
+
+.book .para { margin-bottom: 5mm; }
+.book .tl { direction: var(--dir); display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2.5mm 2.2mm; margin-bottom: 2.5mm; }
+.book .w { display: inline-flex; flex-direction: column; align-items: center; text-align: center; break-inside: avoid; }
+.book .w .r { direction: ltr; font-size: 7pt; line-height: 1.1; height: 7.7pt; color: var(--red); white-space: nowrap; }
+.book .w .r:empty { display: none; }
+.book.has-read .w .r:empty { display: block; }
+.book .w .h { white-space: nowrap; font-family: var(--tf); font-size: 19pt; line-height: 1.2; }
+.book .w .g { max-width: 26mm; direction: ltr; font-size: 7pt; line-height: 1.15; color: var(--gloss); }
+.book .w .t { direction: ltr; font-size: 6pt; line-height: 1.1; color: var(--tag); font-style: italic; }
+.book .w.pass .t { color: var(--pass); font-style: normal; font-weight: 500; }
+.book .w.pass .h { text-decoration: underline; text-decoration-color: #9fb3d9; text-decoration-thickness: 1.2pt; text-underline-offset: 4pt; }
+.book .w.idiom .t { color: var(--idiom); }
+.book .p { font-family: var(--tf); font-size: 19pt; line-height: 1.2; color: #555; }
+.book .vn { font-size: 7pt; font-weight: 500; color: var(--red); align-self: flex-start; padding-top: 1pt; }
+.book sup.vn { font-size: 6.5pt; vertical-align: super; line-height: 0; margin-inline: .5pt 1.5pt; }
+.book .ln { text-align: justify; hyphens: auto; text-indent: 6mm; margin: 0 0 2mm; }
+.book .notes { font-size: 9.5pt; line-height: 1.4; color: #333; border-top: .4pt solid #bbb; padding-top: 1.5mm; margin-top: 1mm; }
+.book .notes p { margin: 0 0 1mm; padding-inline-start: 5mm; text-indent: -5mm; }
+.book .notes b { font-weight: 500; color: #000; }
+.book .notes .vn { display: inline-block; width: 5mm; text-indent: 0; font-size: 8pt; }
+.book .tgt { unicode-bidi: isolate; direction: var(--dir); font-family: var(--tf); font-size: 1.15em; }
+.book .colophon { font-size: 8pt; color: #666; text-align: center; margin-top: 6mm; }
+
+/* switches */
+.book.no-line .ln, .book.no-notes .notes, .book.no-tags .w .t, .book.no-gloss .w .g, .book.no-read .w .r { display: none; }
+.book.compact .w .h { font-size: 15pt; }
+.book.compact .tl { gap: 1.5mm 1.6mm; margin-bottom: 1.5mm; }
+.book.compact .w .g { font-size: 6.5pt; }
+.book.compact .para { margin-bottom: 3mm; }
+.book.compact .notes { font-size: 8.5pt; line-height: 1.3; }
+.book.big .w .h { font-size: 23pt; }
+.book.big .w .g { font-size: 8.5pt; max-width: 32mm; }
