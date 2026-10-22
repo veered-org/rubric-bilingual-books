@@ -112,39 +112,54 @@
   const msgEl = () => tabOn('srcTabs') === 'search' ? $('searchMsg') : $('linkMsg');
   const tabOn = groupId => $(groupId).querySelector('button.on').dataset.tab;
 
-  const authorName = a => !a ? '' : a.name.replace(/\s*\(.*?\)\s*/g, ' ').trim().replace(/^([^,]+),\s*(.+)$/, '$2 $1');
+  // Project Gutenberg's catalogue, most downloaded first (built by tools/build_catalog.py):
+  // id, title, author, languages, author's death year, downloads. Loaded on first use.
+  let CAT = null, catLoading = null;
+  const fold = s => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  function catalog() {
+    if (CAT) return Promise.resolve(CAT);
+    return catLoading || (catLoading = fetchT('catalog.tsv', 60000).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); }).then(t => {
+      CAT = t.split('\n').filter(Boolean).map(l => {
+        const [id, title, author, langs, died, dl] = l.split('\t');
+        return { id: +id, title, author, langs: langs.split(','), died: +died || 0, dl: +dl || 0, key: fold(title + ' ' + author) };
+      });
+      return CAT;
+    }).catch(e => { catLoading = null; throw e; }));
+  }
 
-  function fromGutendex(b) {
-    const au = b.authors && b.authors[0];
-    return { kind: 'gutenberg', id: b.id, title: b.title.replace(/\s*:\s*\$b.*$/, '').replace(/\s*\[.*?\]\s*/g, ' ').trim(),
-      author: authorName(au), died: au && au.death_year, lang: (b.languages || [])[0] || 'en',
+  function fromCatalog(b) {
+    const recent = b.died && b.died > new Date().getFullYear() - 71;
+    return { kind: 'gutenberg', id: b.id, title: b.title, author: b.author, died: b.died, lang: b.langs[0] || 'en',
       url: `https://www.gutenberg.org/ebooks/${b.id}`, textUrl: `https://www.gutenberg.org/ebooks/${b.id}.txt.utf-8`,
-      license: b.copyright ? 'copyright' : 'pd' };
+      license: recent ? 'pd-recent' : 'pd' };
   }
 
   async function search(q, lang) {
-    $('searchMsg').className = 'msg'; $('searchMsg').textContent = 'Searching Project Gutenberg…'; $('results').innerHTML = '';
-    try {
-      const r = await fetchT(`https://gutendex.com/books/?search=${encodeURIComponent(q)}${lang ? '&languages=' + lang : ''}`);
-      const d = await r.json();
-      const list = (d.results || []).filter(b => (b.media_type || 'Text') === 'Text').slice(0, 25);
-      $('searchMsg').textContent = list.length ? `${d.count} found${d.count > list.length ? '; the most read are shown' : ''}. Click one to choose it.` : 'Nothing found. Try fewer words, or the author\'s last name.';
-      $('results').innerHTML = list.map((b, i) => `<button class="res" data-i="${i}"><span><span class="t">${esc(b.title)}</span><br><span class="a">${esc(authorName(b.authors[0]))} · ${esc((b.languages || []).map(l => NAME[l] || l).join(', '))}</span></span><span class="m">${b.copyright ? 'may be under copyright' : 'public domain (US)'}<br>${(b.download_count || 0).toLocaleString()} downloads</span></button>`).join('');
-      $('results').querySelectorAll('.res').forEach(el => el.onclick = () => choose(fromGutendex(list[+el.dataset.i])));
-    } catch (e) {
+    $('searchMsg').className = 'msg'; $('results').innerHTML = '';
+    if (!CAT) $('searchMsg').textContent = 'Loading the catalogue (once, about 3 MB)…';
+    let cat;
+    try { cat = await catalog(); }
+    catch (e) {
       $('searchMsg').className = 'msg bad';
-      $('searchMsg').innerHTML = 'The search service didn\'t answer. Search on <a href="https://www.gutenberg.org/ebooks/search/?query=' + encodeURIComponent(q) + '" target="_blank" rel="noopener">gutenberg.org</a> instead and paste the book\'s link.';
+      $('searchMsg').innerHTML = 'The catalogue didn\'t load. Search on <a href="https://www.gutenberg.org/ebooks/search/?query=' + encodeURIComponent(q) + '" target="_blank" rel="noopener">gutenberg.org</a> instead and paste the book\'s link.';
+      return;
     }
+    const words = fold(q).split(' ').filter(Boolean), fq = fold(q);
+    const hits = cat.filter(b => (!lang || b.langs.includes(lang)) && words.every(w => b.key.includes(w)));
+    // the catalogue is already in download order; titles that start with the query come first
+    const top = hits.filter(b => fold(b.title).startsWith(fq)).concat(hits.filter(b => !fold(b.title).startsWith(fq))).slice(0, 25);
+    $('searchMsg').textContent = top.length ? `${hits.length.toLocaleString()} found${hits.length > top.length ? '; the most read are shown' : ''}. Click one to choose it.` : 'Nothing found. Try fewer words, or the author\'s last name.';
+    $('results').innerHTML = top.map((b, i) => `<button class="res" data-i="${i}"><span><span class="t">${esc(b.title)}</span><br><span class="a">${esc(b.author)}${b.author ? ' · ' : ''}${esc(b.langs.map(l => NAME[l] || l).join(', '))}</span></span><span class="m">#${b.id}<br>${b.dl ? '~' + b.dl.toLocaleString() + ' downloads' : ''}</span></button>`).join('');
+    $('results').querySelectorAll('.res').forEach(el => el.onclick = () => choose(fromCatalog(top[+el.dataset.i])));
   }
 
-  // a pick or a pasted link; "known" fills in the details if the lookup service is slow
-  async function gutenbergById(id, msg, known) {
-    msg.className = 'msg'; msg.textContent = 'Looking up the book…';
-    try {
-      const r = await fetchT(`https://gutendex.com/books/${id}/`, known ? 5000 : 9000);
-      if (!r.ok) throw new Error(r.status);
-      choose(fromGutendex(await r.json()));
-    } catch (e) {
+  // a quick pick or a pasted link: the catalogue fills in the details
+  async function gutenbergById(id, msg) {
+    msg.className = 'msg'; msg.textContent = CAT ? '' : 'Looking up the book…';
+    let b = null;
+    try { b = (await catalog()).find(x => x.id === id); } catch (e) {}
+    if (b) choose(fromCatalog(b));
+    else {
       const pk = PICKS.find(p => p[0] === id);
       choose({ kind: 'gutenberg', id, title: pk ? pk[1] : `Project Gutenberg book #${id}`, author: pk ? pk[2] : '', lang: 'en', url: `https://www.gutenberg.org/ebooks/${id}`,
         textUrl: `https://www.gutenberg.org/ebooks/${id}.txt.utf-8`, license: 'pd' });
@@ -198,6 +213,7 @@
 
   const LIC = {
     pd: ['ok', 'Public domain in the United States. If you live elsewhere, check that the author died long enough ago for your country.'],
+    'pd-recent': ['warn', 'Public domain in the United States, but the author died less than 70 years ago, so it may still be under copyright where you live. Check before you start.'],
     'pd-check': ['ok', 'Usually public domain, but check the page: some texts there are newer or have their own license.'],
     ccbysa: ['ok', 'Wikipedia: CC BY-SA 4.0. The edition will credit the article and carry the same license.'],
     copyright: ['warn', 'Project Gutenberg marks this one as possibly under copyright. Please choose a public-domain book.'],
@@ -391,8 +407,9 @@
   tabs('outTabs', build);
   $('chips').innerHTML = PICKS.map(([id, t]) => `<button class="chip" data-id="${id}">${esc(t)}</button>`).join('') +
     '<button class="chip" data-wiki="https://en.wikipedia.org/wiki/Moon">Wikipedia: the Moon</button>';
-  $('chips').querySelectorAll('.chip').forEach(c => c.onclick = () => c.dataset.wiki ? useLink(c.dataset.wiki) : gutenbergById(+c.dataset.id, $('searchMsg'), true));
+  $('chips').querySelectorAll('.chip').forEach(c => c.onclick = () => c.dataset.wiki ? useLink(c.dataset.wiki) : gutenbergById(+c.dataset.id, $('searchMsg')));
   $('sites').innerHTML = SITES.map(([n, u, d]) => `<div class="site"><b><a href="${u}" target="_blank" rel="noopener">${esc(n)}</a></b><span>${esc(d)}</span></div>`).join('');
+  $('q').addEventListener('focus', () => catalog().catch(() => {}), { once: true });
   $('searchForm').onsubmit = e => { e.preventDefault(); if ($('q').value.trim()) search($('q').value.trim(), $('qlang').value); };
   $('linkForm').onsubmit = e => { e.preventDefault(); if ($('link').value.trim()) useLink($('link').value); };
   ['learn', 'mine', 'srcLang'].forEach(id => $(id).onchange = langChanged);

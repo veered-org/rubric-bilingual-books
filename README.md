@@ -23,12 +23,13 @@ Rubric turns a free book into a reading edition for someone learning a language.
 3. **Copy the instructions to Claude.** In a free [claude.ai](https://claude.ai) chat, Claude makes one chapter per chat as a `.json` file. In [Claude Code](https://claude.com/claude-code), it downloads the text, splits it into chapters, translates them, and checks each one against the original with `tools/validate.js`.
 4. **Open the files in the reader** (`reader.html`) and click *Print / Save PDF*. Switches turn the glosses, grammar tags, notes and original paragraph on or off, and there are compact and large sizes. For a booklet, print two pages per sheet.
 
-Nothing is uploaded: the reader opens your files in the browser. The book maker only looks up book details from [Gutendex](https://gutendex.com) (the Project Gutenberg catalogue) and the Wikipedia API.
+Nothing is uploaded: the reader opens your files in the browser. The book search runs on a copy of Project Gutenberg's catalogue (`catalog.tsv`, rebuilt with `tools/build_catalog.py`), and Wikipedia links are looked up with the Wikipedia API.
 
 ## Files
 - `index.html`, `app.js`: the book maker.
 - `reader.html`, `reader.js`, `reader.css`: the reader and print layout.
 - `FORMAT.md`: the data format Claude writes (one JSON file per chapter, or several per chapter for long ones).
+- `catalog.tsv`: Project Gutenberg's catalogue, most downloaded first, for the book search. `tools/build_catalog.py` rebuilds it from Gutenberg's catalogue and download counts.
 - `tools/validate.js`: `node tools/validate.js data/ch01.json src/ch01.txt` checks the tokens and that the original text is reproduced word for word. Node only, no packages.
 - `examples/wizard-of-oz/`: the finished Hebrew edition, its brief and the English source text.
 
