@@ -6,6 +6,9 @@
   const KIT_GIT = 'https://github.com/veered-org/rubric-bilingual-books';
   const KIT_ZIP = 'https://veered.org/bilingual-book-maker/rubric-bilingual-books.zip';
   const READER = 'https://veered.org/bilingual-book-maker/app/reader.html';
+  // claude:// links open Claude Desktop with the prompt filled in (not sent).
+  // Its q= cuts off past about 14,000 characters, so a longer prompt gets no link.
+  const LINK_CAP = 14000;
 
   const LANGS = [
     ['he', 'Hebrew'], ['ar', 'Arabic'], ['es', 'Spanish'], ['fr', 'French'], ['de', 'German'], ['it', 'Italian'],
@@ -396,9 +399,14 @@
     const ok = !!book;
     $('needBook').hidden = ok;
     ['copyBtn', 'dlStyle'].forEach(id => $(id).disabled = !ok);
-    $('openClaude').hidden = tabOn('outTabs') !== 'chat';
-    if (!ok) { $('prompt').value = ''; return; }
-    $('prompt').value = tabOn('outTabs') === 'code' ? codePrompt() : chatPrompt();
+    const code = tabOn('outTabs') === 'code';
+    $('openClaude').hidden = code;
+    $('openApp').textContent = code ? 'Open in Claude Code \u2197' : 'Open in the Claude app \u2197';
+    $('appNote').hidden = code;
+    if (!ok) { $('prompt').value = ''; $('openApp').hidden = true; return; }
+    const p = $('prompt').value = code ? codePrompt() : chatPrompt();
+    $('openApp').hidden = p.length > LINK_CAP;
+    $('openApp').href = (code ? 'claude://code/new?q=' : 'claude://claude.ai/new?q=') + encodeURIComponent(p);
   }
 
   // ---- wiring ----
@@ -416,12 +424,15 @@
   ['level', 'register', 'optTags', 'optNotes', 'from', 'to'].forEach(id => $(id).onchange = build);
   $('extra').oninput = build;
   $('scope').onchange = () => { $('rangeBox').hidden = $('scope').value !== 'range'; build(); };
-  $('copyBtn').onclick = async () => {
+  async function copyPrompt(msg) {
     try { await navigator.clipboard.writeText($('prompt').value); }
     catch (e) { $('prompt').select(); document.execCommand('copy'); }
-    $('copyMsg').className = 'msg ok'; $('copyMsg').textContent = 'Copied. Paste it into ' + (tabOn('outTabs') === 'code' ? 'Claude Code.' : 'a new Claude chat.');
-    setTimeout(() => $('copyMsg').textContent = '', 4000);
-  };
+    $('copyMsg').className = 'msg ok'; $('copyMsg').textContent = msg;
+    setTimeout(() => $('copyMsg').textContent = '', 6000);
+  }
+  $('copyBtn').onclick = () => copyPrompt('Copied. Paste it into ' + (tabOn('outTabs') === 'code' ? 'Claude Code.' : 'a new Claude chat.'));
+  // the link still opens claude.ai in a new tab; the copy rides on the same click
+  $('openClaude').onclick = () => { if (book) copyPrompt('Copied. Paste it into the new chat (Ctrl+V, or \u2318V on a Mac).'); };
   $('dlStyle').onclick = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([brief()], { type: 'text/markdown' }));

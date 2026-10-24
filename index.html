@@ -197,7 +197,7 @@ code{background:#F1EEEA;border-radius:4px;padding:1px 5px;font-size:13px}
     </div>
     <div data-pane="chat">
       <ol class="steps">
-        <li>Copy the instructions and paste them into a new chat at <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a>. It makes one chapter per chat, as a <code>.json</code> file.</li>
+        <li>Click <b>Open in the Claude app</b>, or copy the instructions into a new chat at <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a>, and press Enter. It makes one chapter per chat, as a <code>.json</code> file.</li>
         <li>Download the file, open the <a href="reader.html">reader</a> and drop it in. Print or save a PDF from there.</li>
         <li>For the next chapter, start a new chat with the same instructions, change the chapter number, and paste the names list Claude gave you.</li>
       </ol>
@@ -205,18 +205,20 @@ code{background:#F1EEEA;border-radius:4px;padding:1px 5px;font-size:13px}
     <div data-pane="code" hidden>
       <ol class="steps">
         <li>Needs <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> on your computer. It downloads the text, splits it into chapters, translates them, and checks every file against the original.</li>
-        <li>Paste the instructions into Claude Code. It shows you chapter 1 and waits for your OK before doing the rest.</li>
+        <li>Click <b>Open in Claude Code</b> and press Enter, or paste the instructions into Claude Code. It shows you chapter 1 and waits for your OK before doing the rest.</li>
         <li>Open all the <code>.json</code> files together in the <a href="reader.html">reader</a> to print the book.</li>
       </ol>
     </div>
     <div class="msg bad" id="needBook">Choose a book in step 1 first.</div>
     <textarea class="prompt" id="prompt" readonly aria-label="Instructions for Claude"></textarea>
     <div class="row">
-      <button class="btn" id="copyBtn">Copy instructions</button>
-      <a class="btn alt" id="openClaude" href="https://claude.ai/new" target="_blank" rel="noopener">Open Claude</a>
+      <a class="btn" id="openApp" href="#">Open in the Claude app &#8599;</a>
+      <a class="btn alt" id="openClaude" href="https://claude.ai/new" target="_blank" rel="noopener">Copy and open claude.ai</a>
+      <button class="btn alt" id="copyBtn">Copy instructions</button>
       <button class="btn alt" id="dlStyle">Download the brief (STYLE.md)</button>
       <span class="msg" id="copyMsg"></span>
     </div>
+    <p class="note" id="appNote">&#8599; opens the <a href="https://claude.com/download" target="_blank" rel="noopener">Claude desktop app</a> with the instructions already filled in: press Enter to start. No desktop app? &ldquo;Copy and open claude.ai&rdquo; copies them for you; paste into the new chat.</p>
     <p class="note">Free books only, please. Project Gutenberg books are public domain in the United States; check your own country's rules too. Wikipedia articles are under CC BY-SA 4.0, so your edition must credit the article and its authors and use the same license; the instructions ask Claude to put that credit in the book. Claude can make mistakes, so treat the notes as a study aid and check anything important.</p>
   </section>
 </div>
